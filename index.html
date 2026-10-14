@@ -447,11 +447,13 @@
 
       <form class="banner welcome no-print" id="welcome" hidden>
         <div class="welcome-body">
-          <p class="welcome-title">Welcome to your ledger</p>
-          <label for="welcomeName">First, whose ledger is this?</label>
-          <div class="welcome-row">
-            <input class="welcome-input" id="welcomeName" type="text" maxlength="40" autocomplete="name" placeholder="Your name">
-            <button class="btn" type="submit">Begin</button>
+          <div id="welcomeAsk">
+            <p class="welcome-title">Welcome to your ledger</p>
+            <label for="welcomeName">First, whose ledger is this?</label>
+            <div class="welcome-row">
+              <input class="welcome-input" id="welcomeName" type="text" maxlength="40" autocomplete="name" placeholder="Your name">
+              <button class="btn" type="submit">Begin</button>
+            </div>
           </div>
           <p class="welcome-note">Everything you type is saved automatically in this browser, on this device. Use <i>Download backup</i> now and then to keep a safe copy, or to move your tracker to another device.</p>
         </div>
@@ -1251,7 +1253,7 @@
     refreshCatList();
     updateBackupNote();
     $('currency').value = state.settings.currency;
-    $('welcome').hidden = state.settings.hideWelcome || !storageOK;
+    renderWelcome();
   }
 
   $('prevMonth').addEventListener('click', function () { goTo(shiftMonth(currentKey, -1)); });
@@ -1291,7 +1293,17 @@
   function setOwner(v) {
     state.settings.owner = cleanName(v);
     renderOwner();
+    renderWelcome();
     scheduleSave();
+  }
+  // Ask for a name once; if a name already exists, only the saving note remains.
+  function renderWelcome() {
+    var w = $('welcome');
+    if (state.settings.hideWelcome || !storageOK) { w.hidden = true; return; }
+    var hasName = !!state.settings.owner;
+    $('welcomeAsk').hidden = hasName;
+    $('dismissWelcome').textContent = hasName ? 'Got it' : 'Skip';
+    w.hidden = false;
   }
   var ownerBtn = $('ownerBtn'), ownerInput = $('ownerInput'), editingOwner = false;
   function openOwnerEdit() {
