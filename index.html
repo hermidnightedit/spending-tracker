@@ -154,7 +154,9 @@
     margin: 18px 0 0; padding: 12px 16px; border: 1px solid var(--rule-mid); background: var(--note-bg);
     font-size: 14px; display: flex; gap: 12px; align-items: flex-start; justify-content: space-between;
   }
-  .banner.warn { border-color: var(--bad); background: var(--warn-bg); color: var(--warn-ink); }
+  .banner.demo { border-color: var(--rule-mid); text-align: center; justify-content: center; }
+.banner.demo a { color: inherit; font-weight: 600; }
+.banner.warn { border-color: var(--bad); background: var(--warn-bg); color: var(--warn-ink); }
   .banner p { margin: 0; }
   .banner .link-btn { flex: none; }
   .link-btn {
@@ -441,6 +443,8 @@
         <button class="today-link" id="goToday" type="button" hidden>Back to this month</button>
       </header>
 
+      <div class="banner demo no-print" id="demoBar" hidden><p id="demoText"></p></div>
+
       <div class="banner warn" id="storageBanner" hidden>
         <p id="storageBannerText"></p>
       </div>
@@ -569,6 +573,8 @@
   'use strict';
 
   var STORE_KEY = 'classicSpendingTracker.v1';
+  var DEMO_MODE = false;            // true = free demo build (sample data, nothing saved)
+  var FULL_VERSION_LINK = 'https://www.etsy.com/shop/HerMidnightEdit';   // your Etsy listing link, shown in demo mode
   var CURRENCIES = [
     ['USD', 'US Dollar'], ['GBP', 'British Pound'], ['EUR', 'Euro'], ['CAD', 'Canadian Dollar'],
     ['AUD', 'Australian Dollar'], ['NZD', 'New Zealand Dollar'], ['INR', 'Indian Rupee'], ['AED', 'UAE Dirham'],
@@ -741,9 +747,37 @@
     return out;
   }
 
+  // sample month for the demo: entries up to today, plus last month for comparison
+  function sampleState() {
+    var st = defaultState();
+    st.settings.owner = 'Amara';
+    st.settings.hideWelcome = true;
+    var now = monthOf(todayISO()), prev = shiftMonth(now, -1), today = new Date().getDate();
+    var items = [
+      [1, 'Rent', 'Rent', 85000, 'card', 'need'], [2, 'Weekly shop', 'Groceries', 6420, 'card', 'need'], [3, 'Coffee with Sara', 'Dining out', 780, 'card', 'want'],
+      [4, 'Bus pass', 'Transport', 4500, 'card', 'need'], [5, 'Phone bill', 'Bills & utilities', 2500, 'card', 'need'], [6, 'Candles', 'Shopping', 1899, 'card', 'want'],
+      [8, 'Weekly shop', 'Groceries', 5875, 'card', 'need'], [9, 'Streaming', 'Subscriptions', 1099, 'card', 'want'], [10, 'Pharmacy', 'Health & beauty', 1240, 'cash', 'need'],
+      [12, 'Cinema', 'Entertainment', 1600, 'card', 'want'], [13, 'Savings jar', 'Savings', 10000, 'card', 'need'], [15, 'Weekly shop', 'Groceries', 6110, 'card', 'need'],
+      [16, 'Birthday gift', 'Gifts', 3500, 'card', 'want'], [18, 'Electricity', 'Bills & utilities', 6800, 'card', 'need'], [19, 'Lunch out', 'Dining out', 1450, 'cash', 'want'],
+      [22, 'Weekly shop', 'Groceries', 5930, 'card', 'need'], [23, 'Taxi home', 'Transport', 1800, 'card', 'want'], [25, 'Haircut', 'Health & beauty', 3500, 'card', 'want'],
+      [27, 'Books', 'Shopping', 2400, 'card', 'want'], [29, 'Weekly shop', 'Groceries', 6300, 'card', 'need']
+    ];
+    function fill(key, upTo, scale) {
+      var m = st.months[key] = { budget: 150000, entries: [] };
+      items.forEach(function (it) {
+        if (it[0] > upTo || it[0] > daysIn(key)) return;
+        m.entries.push({ id: uid(), date: key + '-' + pad(it[0]), desc: it[1], cat: it[2], amount: Math.round(it[3] * scale), pay: it[4], kind: it[5] });
+      });
+    }
+    fill(prev, 31, 1.04);
+    fill(now, today, 1);
+    return st;
+  }
+
   var storageOK = true;
   var state;
   function loadState() {
+    if (DEMO_MODE) return sampleState();
     try {
       var k = '__sp_test__';
       localStorage.setItem(k, '1');
@@ -776,6 +810,7 @@
   function flush() {
     clearTimeout(saveTimer);
     if (!dirty) return;
+    if (DEMO_MODE) { dirty = false; $('statusText').textContent = 'Demo: not saved'; return; }
     if (!storageOK) { setStatus('error'); return; }
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
@@ -1479,11 +1514,18 @@
 
   /* ---------- start ---------- */
   state = loadState();
-  if (!storageOK) {
+  if (!storageOK && !DEMO_MODE) {
     showStorageBanner('This browser is blocking saving (often private or incognito mode). Your entries will disappear when you close this page. Open the tracker in a normal window to save automatically.');
     setStatus('error');
   }
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) { /* ignore */ }
+  if (DEMO_MODE) {
+    $('demoText').innerHTML = 'Free demo with sample spending. Nothing is saved.' + (FULL_VERSION_LINK ? ' <a href="' + FULL_VERSION_LINK + '" target="_blank" rel="noopener">Get the full tracker</a>' : '');
+    $('demoBar').hidden = false;
+    $('statusText').textContent = 'Demo: not saved';
+  }
+  // save a copy for offline use (needs sw.js next to this file)
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js').catch(function () {});
   renderAll();
   // Roll over to the new month if the page is left open past midnight.
   setInterval(function () {
