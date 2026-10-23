@@ -574,7 +574,7 @@
 
   var STORE_KEY = 'classicSpendingTracker.v1';
   var DEMO_MODE = false;            // true = free demo build (sample data, nothing saved)
-  var FULL_VERSION_LINK = 'https://www.etsy.com/shop/HerMidnightEdit';   // your Etsy listing link, shown in demo mode
+  var FULL_VERSION_LINK = 'https://www.etsy.com/listing/4601911015/spending-tracker-web-app-adhd-friendly';   // your Etsy listing link, shown in demo mode
   var CURRENCIES = [
     ['USD', 'US Dollar'], ['GBP', 'British Pound'], ['EUR', 'Euro'], ['CAD', 'Canadian Dollar'],
     ['AUD', 'Australian Dollar'], ['NZD', 'New Zealand Dollar'], ['INR', 'Indian Rupee'], ['AED', 'UAE Dirham'],
@@ -763,7 +763,7 @@
       [27, 'Books', 'Shopping', 2400, 'card', 'want'], [29, 'Weekly shop', 'Groceries', 6300, 'card', 'need']
     ];
     function fill(key, upTo, scale) {
-      var m = st.months[key] = { budget: 150000, entries: [] };
+      var m = st.months[key] = { budget: 220000, entries: [] };
       items.forEach(function (it) {
         if (it[0] > upTo || it[0] > daysIn(key)) return;
         m.entries.push({ id: uid(), date: key + '-' + pad(it[0]), desc: it[1], cat: it[2], amount: Math.round(it[3] * scale), pay: it[4], kind: it[5] });
